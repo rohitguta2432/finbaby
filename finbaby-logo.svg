@@ -1,0 +1,17 @@
+<svg width="400" height="100" viewBox="0 0 400 100" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@600;800&amp;display=swap');
+  </style>
+  <!-- Stacked bars icon -->
+  <rect x="10" y="52" width="54" height="16" rx="8" fill="#0D9488"/>
+  <rect x="5" y="30" width="64" height="16" rx="8" fill="#14B8A6"/>
+  <rect x="0" y="8" width="74" height="16" rx="8" fill="#2DD4BF"/>
+  <!-- Star sparkle -->
+  <path d="M68 2 L70.5 -4 L73 2 L79 4.5 L73 7 L70.5 13 L68 7 L62 4.5 Z" fill="#FBBF24"/>
+  <!-- Wordmark -->
+  <text x="92" y="38" font-family="'Manrope', sans-serif" font-size="46" font-weight="800" fill="#0F172A" letter-spacing="-2">FinBaby</text>
+  <!-- Tagline -->
+  <text x="95" y="60" font-family="'Manrope', sans-serif" font-size="13" font-weight="600" fill="#0D9488" letter-spacing="4.5">FINANCIAL ADVISOR</text>
+  <!-- Accent bar -->
+  <rect x="93" y="68" width="44" height="3.5" rx="1.75" fill="#FBBF24"/>
+</svg>

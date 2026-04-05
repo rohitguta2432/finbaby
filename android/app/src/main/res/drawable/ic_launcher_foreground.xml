@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Wallet body -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,36 L78,36 C80.2,36 82,37.8 82,40 L82,68 C82,70.2 80.2,72 78,72 L30,72 C27.8,72 26,70.2 26,68 L26,40 C26,37.8 27.8,36 30,36 Z" />
+
+    <!-- Wallet flap -->
+    <path
+        android:fillColor="#E0F2F1"
+        android:pathData="M30,36 L78,36 C80.2,36 82,37.8 82,40 L82,46 L26,46 L26,40 C26,37.8 27.8,36 30,36 Z" />
+
+    <!-- Coin circle -->
+    <path
+        android:fillColor="#FFB300"
+        android:pathData="M68,58 m-10,0 a10,10 0,1 1,20 0 a10,10 0,1 1,-20 0" />
+
+    <!-- Rupee symbol in coin -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeColor="#FFFFFF"
+        android:pathData="M64,53 L72,53 M64,57 L72,57 M66,53 L66,63 L70,59" />
+
+</vector>
