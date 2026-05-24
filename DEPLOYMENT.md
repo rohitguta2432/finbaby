@@ -85,16 +85,53 @@ In `rohitguta2432/finbaby` → Settings → Secrets and variables → Actions. T
 | `FINBABY_STORE_PASSWORD` | from credentials file | ✅ set |
 | `FINBABY_KEY_ALIAS` | `finbaby` | ✅ set |
 | `FINBABY_KEY_PASSWORD` | same as store password (PKCS12) | ✅ set |
-| `FINBABY_PLAY_JSON_B64` | `base64 -i ~/.config/finbaby/play-key.json \| pbcopy` | ❌ needs service-account JSON first |
+| `FINBABY_PLAY_JSON_B64` | `base64 -i ~/.config/finbaby/play-key.json \| pbcopy` | ✅ set |
 
 ---
 
-## Cutting a release
+## What's complete and what's left in Play Console
+
+As of 2026-05-24, the Jama app listing is wired up except for **5 image uploads** that need to happen in the browser (Play Console's Angular uploader resists programmatic injection from automation tools).
+
+**✅ Complete (10/11 + descriptions):**
+- App created with package `com.jama.expense`
+- Privacy policy URL, App access, Ads, Content rating (All ages),
+  Target audience (18+), Data safety ("no data collected"),
+  Government apps, Financial features, Health, App category (Finance),
+  Contact details, Store listing title + short + full description
+- CI workflow has already drafted release **0.0.2** to Internal track
+
+**❌ Last step — drag-and-drop 5 PNG files in browser:**
+
+1. Open https://play.google.com/console/u/0/developers/7974256350151127084/app/4972206024482393782/main-store-listing
+2. Scroll to **Graphics** section
+3. Drag each file from `~/Documents/finbaby/store-assets/` (or `~/Downloads/`) onto the matching upload zone:
+
+   | Zone | File |
+   |---|---|
+   | App icon | `icon-512.png` |
+   | Feature graphic | `feature-1024x500.png` |
+   | Phone screenshots (need at least 2) | `screenshot-1-home.png`, `screenshot-2-budget.png`, `screenshot-3-reports.png` |
+
+4. Click **Save** at the bottom right.
+
+> **Note on screenshots:** these are programmatically generated placeholders with the right dimensions and branding, so they'll pass technical Play review. Replace them with real screenshots from a running build before you market the app to actual users. The `store-assets/generate_assets.py` script can re-generate them if you tweak the design.
+
+## Promote the existing draft to public Internal testing
+
+The CI run drafted release **0.0.2** to Internal but didn't roll it out. To make it installable:
+
+1. Play Console → Jama → **Testing → Internal testing → Testers** tab → add testers (your email at minimum) or create an email list.
+2. Back on the release → **Roll out to internal testing** button.
+
+You'll then get an opt-in URL you can visit on your phone to install Jama from the Play Store.
+
+## Cutting a production release
 
 ```bash
 # bump versionName in commits / changelog as desired
-git tag v1.0.1
-git push origin v1.0.1
+git tag v1.0.0
+git push origin v1.0.0
 ```
 
 Watch it in **Actions** tab. The workflow:
