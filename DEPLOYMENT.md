@@ -1,4 +1,4 @@
-# FinBaby — Play Store deployment
+# Jama — Play Store deployment
 
 CI/CD: tag push → GitHub Actions builds the AAB, signs it, uploads to **Internal** track, then promotes to **Production** with a 10% staged rollout.
 
@@ -7,6 +7,8 @@ git tag v1.0.1 && git push origin v1.0.1
 ```
 
 That's the steady-state flow. Everything below is one-time setup (or one-time-per-environment-change).
+
+> **Context: this is a relaunch.** The previous package `com.finbaby.app` was suspended by Google Play in April 2026 ("Repeated app rejections" enforcement). The SMS auto-import feature has been removed and the app rebranded as Jama under `com.jama.expense` per Google's stated remedy.
 
 ---
 
@@ -30,25 +32,39 @@ Then `cd android && ./gradlew bundleRelease`.
 
 ### 2. Google Play Console
 
-The app `com.finbaby.app` already exists in Play Console (rejected upload). Two things to do:
+The old `com.finbaby.app` listing is suspended permanently — do not try to revive it. You need to **create a new app listing** under `com.jama.expense`.
 
-**a. Upload key may need reset.** If the rejected upload was accepted by Play (even if the release was rejected in review), Play has locked the upload-key fingerprint. The new keystore above will be rejected at upload time with `Your APK or Android App Bundle was signed with the wrong key`.
+**a. Create the new app.** Play Console → All apps → **Create app**.
+- App name: `Jama` (or `Jama — Expense Tracker`)
+- Default language: English (United States)
+- App or game: App
+- Free or paid: Free
+- Confirm both declarations.
 
-To check: Play Console → your app → **Setup → App integrity → App signing**. Compare the listed "Upload key certificate" SHA-256 with the fingerprint above.
-- **Match** → nothing to do.
-- **Mismatch** → click *Request upload key reset*, upload the new `.jks`, wait for Google to process (usually <48h).
+**b. Complete the required "Set up your app" sections** before you can publish anything:
+- App access (no login screen needed → "All functionality is available without restrictions")
+- Ads ("No, my app does not contain ads")
+- Content rating questionnaire
+- Target audience and content (18+; not directed at children)
+- News app (No)
+- COVID-19 contact tracing (No)
+- Data safety form — declare: stores Transaction data, Personal info (none collected), no data shared/transmitted off-device. Be precise; this is what tripped the previous review.
+- Government apps (No)
+- Financial features — **important.** Jama tracks personal finance; declare as a Personal Finance app. Do NOT mark as a regulated financial product.
+- Privacy policy URL — `https://rohitguta2432.github.io/finbaby/privacy-policy.html` (or wherever you host it; GitHub Pages on this repo serves it for free).
+- Store listing (title, short + full description, screenshots, feature graphic, icon — at minimum)
 
-**b. Service account for API access.** Needed so GitHub Actions can publish on your behalf.
+**c. Service account for API access.** Needed so GitHub Actions can publish on your behalf.
 
 1. Play Console → **Setup → API access** → link a Google Cloud project (or create one).
 2. Under "Service accounts", click **Create new service account** → opens GCP IAM. Create a service account, then create a JSON key for it and download it.
 3. Back in Play Console, click **Grant access** next to the service account. Permissions:
    - **Releases** → Release manager (or Admin if you want metadata edits too)
-   - Restrict to the FinBaby app only.
+   - Restrict to the Jama app only.
 
 Save the JSON key as `~/.config/finbaby/play-key.json` (gitignored locally) — you'll also base64-encode it for the GitHub secret below.
 
-**c. First-time release upload.** Play API can only update *existing* tracks. Upload the AAB manually once to create the Internal track:
+**d. First-time release upload.** Play API can only update *existing* tracks. Upload the AAB manually once to create the Internal track:
 ```bash
 cd android
 FINBABY_STORE_FILE=~/.config/finbaby/finbaby-release.jks \
@@ -57,19 +73,19 @@ FINBABY_KEY_ALIAS=finbaby \
 FINBABY_KEY_PASSWORD='<password>' \
 ./gradlew bundleRelease
 ```
-Upload `app/build/outputs/bundle/release/app-release.aab` to Internal testing in Play Console, save as draft. After that, CI takes over.
+Upload `app/build/outputs/bundle/release/app-release.aab` to **Testing → Internal testing → Create new release**, save as draft. After that, CI takes over.
 
 ### 3. GitHub Secrets
 
-In `rohitguta2432/finbaby` → Settings → Secrets and variables → Actions, add:
+In `rohitguta2432/finbaby` → Settings → Secrets and variables → Actions. The first 4 are already set; only `FINBABY_PLAY_JSON_B64` is missing.
 
-| Secret | How to compute |
-|---|---|
-| `FINBABY_KEYSTORE_B64` | `base64 -i ~/.config/finbaby/finbaby-release.jks \| pbcopy` |
-| `FINBABY_STORE_PASSWORD` | from credentials file |
-| `FINBABY_KEY_ALIAS` | `finbaby` |
-| `FINBABY_KEY_PASSWORD` | same as store password (PKCS12) |
-| `FINBABY_PLAY_JSON_B64` | `base64 -i ~/.config/finbaby/play-key.json \| pbcopy` |
+| Secret | How to compute | Status |
+|---|---|---|
+| `FINBABY_KEYSTORE_B64` | `base64 -i ~/.config/finbaby/finbaby-release.jks \| pbcopy` | ✅ set |
+| `FINBABY_STORE_PASSWORD` | from credentials file | ✅ set |
+| `FINBABY_KEY_ALIAS` | `finbaby` | ✅ set |
+| `FINBABY_KEY_PASSWORD` | same as store password (PKCS12) | ✅ set |
+| `FINBABY_PLAY_JSON_B64` | `base64 -i ~/.config/finbaby/play-key.json \| pbcopy` | ❌ needs service-account JSON first |
 
 ---
 
@@ -102,12 +118,13 @@ You can't truly "rollback" once users have updated — but you can:
 
 ## Pre-flight reminders for Play review
 
-The previous submission was rejected. A few things worth verifying *before* the next promote_to_production:
+The previous package was suspended for "Repeated app rejections" tied to SMS handling. To not repeat that:
 
-- **SMS permissions** (`READ_SMS`, `RECEIVE_SMS`) fall under Google's [restricted permissions policy](https://support.google.com/googleplay/android-developer/answer/9047303). Apps that aren't the default SMS handler must submit a **Permissions Declaration form** with justification + a demo video. Without that, the app will be rejected again regardless of the privacy policy fix. The cleanest alternative is to use the [SmsRetriever API](https://developers.google.com/identity/sms-retriever) (no permission needed) or make the user paste/forward SMS manually. Worth deciding before next submit.
-- **Data safety form** in Play Console must declare every type of data the app collects/processes — SMS content is sensitive.
+- **No restricted permissions.** The current manifest only requests `POST_NOTIFICATIONS`, `USE_BIOMETRIC`, `RECEIVE_BOOT_COMPLETED` — all standard. Don't add `READ_SMS` / `RECEIVE_SMS` / `CALL_LOG` etc. without an approved Permissions Declaration.
+- **Data safety form must match the code.** Declare exactly what the app processes; nothing is sent off-device.
 - **Target API level** is 35 ✓ (Google requires 34+ as of Aug 2025).
-- **Privacy policy URL** must be reachable from the listing — your `privacy-policy.html` needs to be hosted somewhere public (GitHub Pages on this repo works).
+- **Privacy policy URL** must be reachable from the listing. Enable GitHub Pages on this repo (Settings → Pages → from main branch root) to host `privacy-policy.html`.
+- **App name "Jama"** is intentionally different from the suspended "FinBaby" listing — required by Google's relaunch guidance.
 
 ---
 
@@ -118,7 +135,7 @@ The previous submission was rejected. A few things worth verifying *before* the 
 | `android/app/build.gradle.kts` | reads signing from env vars or `keystore.properties` |
 | `android/keystore.properties.example` | template for local signing |
 | `android/Gemfile` | locks Fastlane version |
-| `android/fastlane/Appfile` | Play package + service account path |
+| `android/fastlane/Appfile` | Play package (`com.jama.expense`) + service account path |
 | `android/fastlane/Fastfile` | `build` / `internal` / `promote_to_production` / `release` lanes |
 | `.github/workflows/release.yml` | tag-triggered CI pipeline |
-| `~/.config/finbaby/` | **local, never commit** — keystore + service account key + creds |
+| `~/.config/finbaby/` | **local, never commit** — keystore + service account key + creds (folder name kept across rename) |

@@ -26,11 +26,11 @@ val keyPassword = signingValue("FINBABY_KEY_PASSWORD", "keyPassword")
 val hasReleaseSigning = listOf(storeFilePath, storePassword, keyAlias, keyPassword).all { !it.isNullOrBlank() }
 
 android {
-    namespace = "com.finbaby.app"
+    namespace = "com.jama.expense"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.finbaby.app"
+        applicationId = "com.jama.expense"
         minSdk = 26
         targetSdk = 35
         versionCode = (System.getenv("FINBABY_VERSION_CODE") ?: "1").toInt()

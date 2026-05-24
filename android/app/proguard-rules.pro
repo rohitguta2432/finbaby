@@ -1,4 +1,4 @@
-# FinBaby ProGuard Rules
+# Jama ProGuard Rules
 
 # Room
 -keep class * extends androidx.room.RoomDatabase
@@ -11,7 +11,7 @@
 # Gson
 -keepattributes Signature
 -keepattributes *Annotation*
--keep class com.finbaby.app.data.** { *; }
+-keep class com.jama.expense.data.** { *; }
 
 # Vico Charts
 -keep class com.patrykandpatrick.vico.** { *; }

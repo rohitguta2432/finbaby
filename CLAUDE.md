@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FinBaby (branded "Jama") is an Android personal finance/expense tracker app targeting Indian middle-class users. Built with Kotlin, Jetpack Compose, and Material 3. The app reads bank SMS messages to auto-import transactions, supports manual entry, budgeting (50/30/20 rule), reports with charts, and CSV export.
+Jama (package `com.jama.expense`) is an Android personal finance/expense tracker targeting Indian middle-class users. Built with Kotlin, Jetpack Compose, and Material 3. Manual entry only — no SMS reading. Supports budgeting (50/30/20 rule), reports with charts, CSV export, biometric lock, and daily reminders.
+
+> Previously released as "FinBaby" (`com.finbaby.app`); that listing was suspended by Google Play in April 2026 for repeated rejections tied to the prior SMS auto-import feature. The SMS package was removed and the app was relaunched under a new package name per Google's stated remedy.
 
 ## Build Commands
 
@@ -14,16 +16,19 @@ All commands run from the `android/` directory:
 cd android
 ./gradlew assembleDebug          # Debug build
 ./gradlew assembleRelease        # Release build (signed, minified)
+./gradlew bundleRelease          # Signed release AAB (for Play Store)
 ./gradlew test                   # Unit tests
 ./gradlew connectedAndroidTest   # Instrumentation tests
 ./gradlew kspDebugKotlin         # Run KSP annotation processing (Room, Hilt)
 ```
 
+Release signing reads from env vars (`FINBABY_STORE_FILE`, `FINBABY_STORE_PASSWORD`, `FINBABY_KEY_ALIAS`, `FINBABY_KEY_PASSWORD`) or `android/keystore.properties` (gitignored).
+
 ## Architecture
 
 **Stack:** Kotlin · Jetpack Compose · Material 3 · Hilt DI · Room DB · Navigation Compose · Vico Charts · WorkManager
 
-**Package structure** (`com.finbaby.app`):
+**Package structure** (`com.jama.expense`):
 
 - `data/db/entity/` — Room entities: Transaction, Category, Budget, Profile
 - `data/db/dao/` — Room DAOs for each entity
@@ -33,7 +38,6 @@ cd android
 - `ui/<feature>/` — Each screen has its own ViewModel + Composable (home, reports, budget, settings, search, detail, onboarding, salary, tips)
 - `ui/components/` — Shared composables (bottom nav, top bar, logo, category icon, budget progress bar)
 - `ui/theme/` — Color, Type, Theme definitions following the "Mindful Ledger" design system
-- `sms/` — SMS parsing pipeline: SmsReader → SmsRegexEngine → SmsTransactionParser → BankSenderMap
 - `worker/` — WorkManager workers: DailyReminder, RecurringTransaction, BudgetAlert
 - `util/` — DateUtils, CurrencyFormatter, CsvExporter, BackupManager, CategoryMatcher, TipsEngine
 
@@ -48,7 +52,13 @@ cd android
 - Room database version 1 with `exportSchema = true` — schemas go to `app/schemas/`
 - Default categories are seeded on first DB creation via `RoomDatabase.Callback`
 - Categories have a `budgetType` field (needs/wants) for 50/30/20 budgeting
-- SMS import uses regex patterns mapped per bank sender ID (`BankSenderMap`)
-- Design system: "Mindful Ledger" — teal/amber palette, no hard borders, tonal layering (see `stitch_output/stitch/jama_aura/DESIGN.md`)
+- Design system: "Mindful Ledger" — teal/amber palette, no hard borders, tonal layering
 - Fonts: Plus Jakarta Sans (display/headlines) + Inter (body/labels) via Google Fonts
 - Min SDK 26, Target SDK 35, Java 17
+
+## Naming nuances (legacy)
+
+- Class names still use `FinBaby*` (FinBabyApp, FinBabyDatabase, FinBabyNavGraph) — internal only, not user-visible.
+- Display name (`android:label` in manifest) is "Jama".
+- Database name (`finbaby_db`) kept for migration continuity if anyone updated from the old app.
+- Env var prefix is `FINBABY_*` for signing (kept across the rename to avoid breaking GitHub secrets).

@@ -1,10 +1,11 @@
-# FinBaby (Jama)
+# Jama
 
-A personal finance and expense tracker Android app designed for Indian middle-class users. Track expenses, set budgets, auto-import bank SMS transactions, and get smart saving tips — all in a calm, minimal interface.
+A personal finance and expense tracker Android app designed for Indian middle-class users. Track expenses, set budgets, and get smart saving tips — all in a calm, minimal interface.
+
+> Previously released as "FinBaby" (`com.finbaby.app`). That listing was suspended by Google Play in April 2026 for repeated rejections tied to the prior SMS auto-import feature, which has since been removed. This is the rebranded, policy-compliant relaunch.
 
 ## Features
 
-- **SMS Auto-Import** — Reads bank SMS messages and auto-categorizes transactions
 - **Manual Entry** — Add income/expense with category, notes, and date
 - **50/30/20 Budgeting** — Budget planner splitting needs, wants, and savings
 - **Reports & Charts** — Donut charts by category, daily bar charts, monthly trends
@@ -38,16 +39,19 @@ cd android
 ## Project Structure
 
 ```
-android/app/src/main/java/com/finbaby/app/
+android/app/src/main/java/com/jama/expense/
 ├── data/          # Room entities, DAOs, repositories
 ├── di/            # Hilt DI module
 ├── navigation/    # NavGraph and routes
-├── sms/           # SMS reading, parsing, bank sender mapping
 ├── ui/            # Screens: home, reports, budget, settings, search, tips, onboarding
 ├── util/          # Date, currency, CSV, backup, tips engine
 └── worker/        # WorkManager: reminders, recurring transactions, budget alerts
 ```
 
+## Deployment
+
+CI/CD: tag push (`git tag v1.0.1 && git push origin v1.0.1`) → GitHub Actions builds, signs, uploads to Internal track, then promotes to Production with 10% staged rollout. See [DEPLOYMENT.md](DEPLOYMENT.md) for one-time Play Console setup.
+
 ## Design
 
-"The Mindful Ledger" — teal & amber palette, soft minimalism, no hard borders, tonal layering. See [DESIGN.md](stitch_output/stitch/jama_aura/DESIGN.md) for the full design system spec.
+"The Mindful Ledger" — teal & amber palette, soft minimalism, no hard borders, tonal layering.

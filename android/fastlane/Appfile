@@ -1,2 +1,2 @@
 json_key_file(ENV["FINBABY_PLAY_JSON"] || "play-key.json")
-package_name("com.finbaby.app")
+package_name("com.jama.expense")
