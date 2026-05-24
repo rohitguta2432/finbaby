@@ -19,11 +19,14 @@ val keystoreProps = Properties().apply {
 fun signingValue(envName: String, propName: String): String? =
     System.getenv(envName)?.takeIf { it.isNotBlank() } ?: keystoreProps.getProperty(propName)
 
-val storeFilePath = signingValue("FINBABY_STORE_FILE", "storeFile")
-val storePassword = signingValue("FINBABY_STORE_PASSWORD", "storePassword")
-val keyAlias = signingValue("FINBABY_KEY_ALIAS", "keyAlias")
-val keyPassword = signingValue("FINBABY_KEY_PASSWORD", "keyPassword")
-val hasReleaseSigning = listOf(storeFilePath, storePassword, keyAlias, keyPassword).all { !it.isNullOrBlank() }
+// NB: do NOT name these `storePassword` / `keyAlias` / `keyPassword` —
+// inside `signingConfigs { create("release") { ... } }` the SigningConfig
+// receiver shadows outer vals of the same name, silently setting properties to null.
+val releaseStoreFile = signingValue("FINBABY_STORE_FILE", "storeFile")
+val releaseStorePassword = signingValue("FINBABY_STORE_PASSWORD", "storePassword")
+val releaseKeyAlias = signingValue("FINBABY_KEY_ALIAS", "keyAlias")
+val releaseKeyPassword = signingValue("FINBABY_KEY_PASSWORD", "keyPassword")
+val hasReleaseSigning = listOf(releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword).all { !it.isNullOrBlank() }
 
 android {
     namespace = "com.jama.expense"
@@ -46,10 +49,10 @@ android {
     signingConfigs {
         if (hasReleaseSigning) {
             create("release") {
-                storeFile = file(storeFilePath!!)
-                this.storePassword = storePassword
-                this.keyAlias = keyAlias
-                this.keyPassword = keyPassword
+                storeFile = file(releaseStoreFile!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
             }
         }
     }
