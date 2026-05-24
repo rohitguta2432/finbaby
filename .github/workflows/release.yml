@@ -1,0 +1,108 @@
+name: Android Release
+
+# Triggers:
+#   - push tag like v1.0.0  -> derives versionCode from run number, deploys to internal then promotes to production (10% rollout)
+#   - manual dispatch       -> pick track + rollout from the GitHub Actions UI
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      track:
+        description: 'Play track for the build upload'
+        type: choice
+        options: [internal, alpha, beta, production]
+        default: internal
+      promote:
+        description: 'Promote to production after upload?'
+        type: boolean
+        default: true
+      rollout:
+        description: 'Staged rollout fraction (0.0 to 1.0)'
+        default: '0.1'
+
+concurrency:
+  group: android-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: android
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+          working-directory: android
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Decode release keystore
+        run: |
+          echo "${{ secrets.FINBABY_KEYSTORE_B64 }}" | base64 -d > "$RUNNER_TEMP/finbaby-release.jks"
+          echo "FINBABY_STORE_FILE=$RUNNER_TEMP/finbaby-release.jks" >> "$GITHUB_ENV"
+
+      - name: Decode Play Store service account
+        run: |
+          echo "${{ secrets.FINBABY_PLAY_JSON_B64 }}" | base64 -d > "$RUNNER_TEMP/play-key.json"
+          echo "FINBABY_PLAY_JSON=$RUNNER_TEMP/play-key.json" >> "$GITHUB_ENV"
+
+      - name: Derive version
+        id: version
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION_NAME="${GITHUB_REF_NAME#v}"
+          else
+            VERSION_NAME="0.0.${GITHUB_RUN_NUMBER}"
+          fi
+          # versionCode must be monotonically increasing — run number works since GH runs auto-increment
+          echo "FINBABY_VERSION_CODE=${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+          echo "FINBABY_VERSION_NAME=${VERSION_NAME}" >> "$GITHUB_ENV"
+          echo "version_name=${VERSION_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload to internal track
+        env:
+          FINBABY_STORE_PASSWORD: ${{ secrets.FINBABY_STORE_PASSWORD }}
+          FINBABY_KEY_ALIAS: ${{ secrets.FINBABY_KEY_ALIAS }}
+          FINBABY_KEY_PASSWORD: ${{ secrets.FINBABY_KEY_PASSWORD }}
+        run: bundle exec fastlane internal
+
+      - name: Promote to production
+        if: ${{ github.event_name == 'push' || github.event.inputs.promote == 'true' }}
+        env:
+          FINBABY_ROLLOUT: ${{ github.event.inputs.rollout || '0.1' }}
+        run: bundle exec fastlane promote_to_production
+
+      - name: Upload AAB artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-${{ steps.version.outputs.version_name }}.aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: warn
+          retention-days: 30

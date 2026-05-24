@@ -4,8 +4,19 @@ android/app/build/
 android/build/
 android/local.properties
 
-# Signing keys
+# Signing keys + CI secrets
 *.jks
+*.keystore
+keystore.properties
+android/keystore.properties
+play-key.json
+android/play-key.json
+
+# Fastlane
+android/fastlane/report.xml
+android/fastlane/README.md
+android/.bundle/
+android/vendor/bundle/
 
 # APK/AAB binaries
 *.apk

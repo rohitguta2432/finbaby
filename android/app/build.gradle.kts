@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -5,6 +7,23 @@ plugins {
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
 }
+
+// Resolve signing config in this order:
+//   1. env vars (CI: FINBABY_STORE_FILE, FINBABY_STORE_PASSWORD, FINBABY_KEY_ALIAS, FINBABY_KEY_PASSWORD)
+//   2. keystore.properties in project root (local dev)
+// If neither is present, release builds will be unsigned (debug builds still work).
+val keystorePropsFile = rootProject.file("keystore.properties")
+val keystoreProps = Properties().apply {
+    if (keystorePropsFile.exists()) keystorePropsFile.inputStream().use { load(it) }
+}
+fun signingValue(envName: String, propName: String): String? =
+    System.getenv(envName)?.takeIf { it.isNotBlank() } ?: keystoreProps.getProperty(propName)
+
+val storeFilePath = signingValue("FINBABY_STORE_FILE", "storeFile")
+val storePassword = signingValue("FINBABY_STORE_PASSWORD", "storePassword")
+val keyAlias = signingValue("FINBABY_KEY_ALIAS", "keyAlias")
+val keyPassword = signingValue("FINBABY_KEY_PASSWORD", "keyPassword")
+val hasReleaseSigning = listOf(storeFilePath, storePassword, keyAlias, keyPassword).all { !it.isNullOrBlank() }
 
 android {
     namespace = "com.finbaby.app"
@@ -14,8 +33,8 @@ android {
         applicationId = "com.finbaby.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = (System.getenv("FINBABY_VERSION_CODE") ?: "1").toInt()
+        versionName = System.getenv("FINBABY_VERSION_NAME") ?: "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -25,22 +44,26 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            storeFile = file("../finbaby-release.jks")
-            storePassword = "jama2026"
-            keyAlias = "jama"
-            keyPassword = "jama2026"
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(storeFilePath!!)
+                this.storePassword = storePassword
+                this.keyAlias = keyAlias
+                this.keyPassword = keyPassword
+            }
         }
     }
 
     buildTypes {
         debug {
-            signingConfig = signingConfigs.getByName("release")
+            // Debug uses the auto-generated debug keystore.
         }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            signingConfig = signingConfigs.getByName("release")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

@@ -1,0 +1,1 @@
+First release — track expenses, set budgets, auto-import bank SMS, see charts and smart tips.

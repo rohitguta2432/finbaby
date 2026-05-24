@@ -1,0 +1,14 @@
+FinBaby (Jama) is a calm, minimal personal finance tracker built for Indian middle-class users. Track expenses, set budgets with the 50/30/20 rule, auto-import bank SMS transactions, and get smart saving tips — all in one place.
+
+Features:
+• SMS auto-import — Reads bank SMS messages and categorizes transactions automatically
+• Manual entry — Add income/expense with category, notes, and date
+• 50/30/20 budgeting — Plan needs, wants, and savings
+• Reports & charts — Donut by category, daily bars, monthly trends
+• Smart tips — Personalized saving suggestions
+• Full-text search across all transactions
+• CSV export and JSON backup/restore
+• Biometric lock (fingerprint / face)
+• Daily reminders
+
+No ads. No accounts. Your data stays on your device.

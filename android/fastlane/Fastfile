@@ -1,0 +1,52 @@
+default_platform(:android)
+
+AAB_PATH = "app/build/outputs/bundle/release/app-release.aab"
+
+platform :android do
+  desc "Assemble a signed release AAB"
+  lane :build do
+    gradle(task: "clean")
+    gradle(
+      task: "bundle",
+      build_type: "Release",
+      project_dir: "."
+    )
+  end
+
+  desc "Upload AAB to the internal testing track"
+  lane :internal do
+    build
+    upload_to_play_store(
+      track: "internal",
+      aab: AAB_PATH,
+      release_status: "draft",
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+
+  desc "Promote the latest internal build to production with staged rollout"
+  lane :promote_to_production do |options|
+    rollout = (options[:rollout] || ENV["FINBABY_ROLLOUT"] || "0.1").to_s
+    upload_to_play_store(
+      track: "internal",
+      track_promote_to: "production",
+      rollout: rollout,
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+
+  desc "Full release: build, upload to internal, promote to production"
+  lane :release do |options|
+    internal
+    promote_to_production(rollout: options[:rollout])
+  end
+end
