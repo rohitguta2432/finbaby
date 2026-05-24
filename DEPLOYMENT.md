@@ -101,7 +101,9 @@ As of 2026-05-24, the Jama app listing is wired up except for **5 image uploads*
   Contact details, Store listing title + short + full description
 - CI workflow has already drafted release **0.0.2** to Internal track
 
-**❌ Last step — drag-and-drop 5 PNG files in browser:**
+**❌ Last step — upload 5 PNG files. Two options:**
+
+### Option A: Manual drag-drop (fastest for one app, ~30 seconds)
 
 1. Open https://play.google.com/console/u/0/developers/7974256350151127084/app/4972206024482393782/main-store-listing
 2. Scroll to **Graphics** section
@@ -114,6 +116,20 @@ As of 2026-05-24, the Jama app listing is wired up except for **5 image uploads*
    | Phone screenshots (need at least 2) | `screenshot-1-home.png`, `screenshot-2-budget.png`, `screenshot-3-reports.png` |
 
 4. Click **Save** at the bottom right.
+
+### Option B: Playwright script (worth it if you'll deploy more apps)
+
+```bash
+cd ~/Documents/finbaby/store-assets
+python3 upload_via_playwright.py
+```
+
+- Opens a Chromium window with a persistent profile at
+  `~/Library/Application Support/Google/Chrome/Playwright-Profile-Jama`.
+- First run: log into Google in that window once. Subsequent runs reuse cookies.
+- Drives the Store Listing → Graphics form, calls `set_input_files()`
+  per slot (CDP-level upload that Angular accepts), clicks Save.
+- Add `--dry` to just open the page without uploading (for selector debugging).
 
 > **Note on screenshots:** these are programmatically generated placeholders with the right dimensions and branding, so they'll pass technical Play review. Replace them with real screenshots from a running build before you market the app to actual users. The `store-assets/generate_assets.py` script can re-generate them if you tweak the design.
 
