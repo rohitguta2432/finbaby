@@ -1,27 +1,51 @@
 """
 Upload Play Store listing graphics for Jama via Playwright.
 
-Why this exists:
+================================================================
+!! THIS SCRIPT DOES NOT WORK. KEPT AS A DOCUMENTED FAILED ATTEMPT. !!
+================================================================
+
+Verified on 2026-05-24/25: Play Console's Angular `<simple-uploader>`
+component accepts the file at the CDP layer (set_input_files succeeds,
+the "Asset was deduplicated" toast even fires) but does NOT attach the
+file to the slot. Validation errors stay red. Uploads remain empty.
+
+Tried and failed:
+  - set_input_files on the hidden <input type="file">
+  - expect_file_chooser intercepting the native picker from the Upload button
+  - CDP-attach to user's real Chrome with cookies copied
+  - launch_persistent_context with manual Google login
+
+The Angular uploader appears to validate that the file selection came
+from a real user gesture in a way no browser-automation framework can
+reproduce. **Just drag-drop the 5 PNGs manually in Play Console — 30 sec.**
+
+See ~/wiki/wiki/android-play-store-deploy.md § Limitation: file uploads
+for the full post-mortem. If Google ever changes the uploader component,
+retest from scratch rather than trusting this script.
+
+(Original docstring preserved below for the curious.)
+----
+
+Why this WAS thought to work:
   Play Console's Angular `<simple-uploader>` component validates files
   through an event path that ignores DOM-level `input.files = ...`
   injection. The MCP-style `javascript_tool` can't drive it.
   Playwright's `set_input_files()` uses Chrome DevTools Protocol under
-  the hood, which dispatches a trusted file-input event Angular accepts.
+  the hood, which we expected would dispatch a trusted file-input event
+  Angular accepts. It does fire the event — but the slot stays empty.
 
-Usage:
+Usage (DO NOT USE — kept for archaeology):
   python3 upload_via_playwright.py
     # opens a persistent Chromium window with a saved profile in
     # ~/Library/Application Support/Google/Chrome/Playwright-Profile-Jama
     # - first run: you'll need to log into Google in that window
     # - subsequent runs: cookies persist, no login needed
 
-  python3 upload_via_playwright.py --headless
-    # only works after the profile has cookies; useful for re-runs
-
   python3 upload_via_playwright.py --dry
     # opens the page but skips actual uploads (for selector debugging)
 
-Files uploaded (must exist):
+Files (would-be uploaded):
   - ./icon-512.png             -> App icon slot
   - ./feature-1024x500.png     -> Feature graphic slot
   - ./screenshot-1-home.png    -> Phone screenshots slot
@@ -133,14 +157,27 @@ def run(headless: bool, dry: bool) -> int:
         print(f"navigating: {LISTING_URL}")
         page.goto(LISTING_URL, wait_until="domcontentloaded", timeout=60000)
 
-        # If not yet logged in we'll bounce to accounts.google.com — pause for user.
+        # If not yet logged in we'll bounce to accounts.google.com — poll until
+        # the URL returns to play.google.com/console (user finished login in the
+        # browser window). Up to 10 minutes.
         if "play.google.com/console" not in page.url:
             print(
-                "\n  ===> Not logged in. Log into Google in the browser window,\n"
-                "       then navigate back to the Store Listing page. Press Enter\n"
-                "       here when you're ready.\n"
+                "\n  ===> Not logged in. Log into Google in the open browser\n"
+                "       window with rohitgupta2432@gmail.com, then this script\n"
+                "       will continue automatically. Waiting up to 10 minutes.\n"
             )
-            input("press Enter to continue...")
+            deadline = 600
+            elapsed = 0
+            while elapsed < deadline:
+                page.wait_for_timeout(3000)
+                elapsed += 3
+                if "play.google.com/console" in page.url:
+                    print(f"  ===> login detected after {elapsed}s, continuing")
+                    break
+            else:
+                print("ERROR: login did not complete within 10 minutes")
+                context.close()
+                return 2
             page.goto(LISTING_URL, wait_until="domcontentloaded", timeout=60000)
 
         # The Graphics section is below the fold; scroll to it
@@ -164,12 +201,8 @@ def run(headless: bool, dry: bool) -> int:
         save_btn.click()
         wait_for_save_toast(page)
 
-        print("done. closing browser in 5s (Ctrl-C to keep open)...")
-        try:
-            page.wait_for_timeout(5000)
-        except KeyboardInterrupt:
-            print("staying open; close browser window manually when done")
-            input()
+        print("done. keeping browser open 60s for visual verification...")
+        page.wait_for_timeout(60000)
         context.close()
         return 0
 
