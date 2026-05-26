@@ -30,30 +30,39 @@ platform :android do
 
   desc "Promote the latest internal build to production with staged rollout"
   # NB: For a brand-new app that's never been reviewed by Google ("draft app"
-  # in Play Console terms), the Play API rejects BOTH:
-  #   - rollout < 1.0  → "Staged rollout is not permitted on draft app"
-  #   - release_status != "draft" → "Only releases with status draft may be
-  #     created on draft app"
-  # So we always promote with release_status: "draft" — once the build is in
-  # Production as a draft, the user clicks "Send for review" in Play Console.
-  # After Google approves the first Production release, future runs can use
-  # release_status: "completed" with staged rollout — but the draft path also
-  # keeps working for those, so we leave it as the default for safety.
+  # in Play Console terms), the Play API rejects all of:
+  #   - rollout < 1.0          → "Staged rollout is not permitted on draft app"
+  #   - release_status != draft → "Only releases with status draft may be
+  #                                created on draft app"
+  # And Fastlane's supply also enforces (client-side):
+  #   - rollout + release_status=draft → "Cannot specify rollout percentage
+  #                                       when the track promote release status
+  #                                       is set to 'draft'"
+  # So:
+  #   - default release_status is "draft" → safe for first release. The user
+  #     clicks "Send for review" in Play Console once.
+  #   - rollout is ONLY passed when release_status is NOT "draft".
+  # After Google approves the first Production release, you can override:
+  #   FINBABY_RELEASE_STATUS=completed FINBABY_ROLLOUT=0.1
+  # for normal staged rollouts on subsequent releases.
   lane :promote_to_production do |options|
     rollout = (options[:rollout] || ENV["FINBABY_ROLLOUT"] || "0.1").to_s
     release_status = (options[:release_status] || ENV["FINBABY_RELEASE_STATUS"] || "draft").to_s
-    upload_to_play_store(
+    params = {
       track: "internal",
       track_promote_to: "production",
       track_promote_release_status: release_status,
-      rollout: rollout,
       skip_upload_apk: true,
       skip_upload_aab: true,
       skip_upload_metadata: true,
       skip_upload_changelogs: true,
       skip_upload_images: true,
       skip_upload_screenshots: true
-    )
+    }
+    # rollout is only valid when the promoted release is "completed" / live —
+    # for draft promotions we omit it entirely.
+    params[:rollout] = rollout unless release_status == "draft"
+    upload_to_play_store(**params)
   end
 
   desc "Full release: build, upload to internal, promote to production"
