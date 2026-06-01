@@ -14,12 +14,20 @@ platform :android do
   end
 
   desc "Upload AAB to the internal testing track"
+  # NB: release_status MUST be "completed" (not "draft") here. The
+  # promote_to_production lane promotes the latest *completed* release from the
+  # internal track — if internal uploads land as "draft", promote silently
+  # picks the previous completed versionCode instead, shipping a stale build.
+  # That bit us 2026-06-01: run #6 uploaded vc6 as draft, promote shipped the
+  # OLD vc2 (with the wrong launcher icon) → Misleading Claims rejection.
+  # "completed" also means internal testers get every CI build automatically,
+  # which is what an internal track is for.
   lane :internal do
     build
     upload_to_play_store(
       track: "internal",
       aab: AAB_PATH,
-      release_status: "draft",
+      release_status: "completed",
       skip_upload_apk: true,
       skip_upload_metadata: true,
       skip_upload_changelogs: true,

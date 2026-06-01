@@ -138,7 +138,56 @@ def make_phone_screenshot(filename, headline, sub, mock_lines):
     img.save(os.path.join(OUT, filename), "PNG")
     print(f"wrote {filename}")
 
+def render_icon_design(size, rounded=True):
+    """Render the Jama ledger-bars icon at `size`x`size`. Single source of truth
+    shared by the Play Store icon AND the in-app launcher icons, so they can
+    never drift apart (an icon/store mismatch = Misleading Claims rejection,
+    learned the hard way 2026-06-01). `rounded`=squircle bg, else full circle."""
+    S = size / 512.0
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    def sc(v): return v * S
+    if rounded:
+        d.rounded_rectangle((sc(24), sc(24), sc(488), sc(488)), radius=sc(112), fill=TEAL_DARK)
+    else:
+        d.ellipse((sc(8), sc(8), sc(504), sc(504)), fill=TEAL_DARK)
+    bar_h = 56
+    bars = [
+        (96, 320, 416, 320 + bar_h, TEAL_LITE),
+        (112, 232, 400, 232 + bar_h, TEAL_MID),
+        (128, 144, 384, 144 + bar_h, (255, 255, 255)),
+    ]
+    for x0, y0, x1, y1, color in bars:
+        d.rounded_rectangle((sc(x0), sc(y0), sc(x1), sc(y1)), radius=sc(bar_h // 2), fill=color)
+    cx, cy, r = 392, 120, 18
+    pts = [
+        (cx, cy - r), (cx + 6, cy - 6), (cx + r, cy), (cx + 6, cy + 6),
+        (cx, cy + r), (cx - 6, cy + 6), (cx - r, cy), (cx - 6, cy - 6),
+    ]
+    d.polygon([(sc(px), sc(py)) for px, py in pts], fill=AMBER)
+    return img
+
+
+def make_android_launcher_icons():
+    """Regenerate the in-app legacy launcher PNGs (mipmap-*/ic_launcher[_round].png)
+    from the same design as the store icon. Adaptive icon (API 26+) is handled by
+    the vector foreground + bg color in the res dir (kept in sync manually)."""
+    res = os.path.join(os.path.dirname(OUT), "android/app/src/main/res")
+    densities = {
+        "mipmap-mdpi": 48, "mipmap-hdpi": 72, "mipmap-xhdpi": 96,
+        "mipmap-xxhdpi": 144, "mipmap-xxxhdpi": 192,
+    }
+    SS = 4  # supersample for clean downscale
+    for folder, px in densities.items():
+        sq = render_icon_design(px * SS, rounded=True).resize((px, px), Image.LANCZOS)
+        sq.save(os.path.join(res, folder, "ic_launcher.png"), "PNG")
+        rd = render_icon_design(px * SS, rounded=False).resize((px, px), Image.LANCZOS)
+        rd.save(os.path.join(res, folder, "ic_launcher_round.png"), "PNG")
+        print(f"wrote {folder}/ic_launcher.png + _round.png ({px}px)")
+
+
 make_icon()
+make_android_launcher_icons()
 make_feature_graphic()
 make_phone_screenshot(
     "screenshot-1-home.png",
