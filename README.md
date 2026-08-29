@@ -55,3 +55,11 @@ CI/CD: tag push (`git tag v1.0.1 && git push origin v1.0.1`) → GitHub Actions 
 ## Design
 
 "The Mindful Ledger" — teal & amber palette, soft minimalism, no hard borders, tonal layering.
+
+---
+
+### 🤝 Work with me
+
+I'm an **AI Consultant · Forward Deployed Engineer** — I embed with teams and ship AI to production: agents, MCP integrations, and LLM features, with evals proving they work.
+
+**→ [rohitraj.tech/en/hire](https://rohitraj.tech/en/hire)**
